@@ -10,12 +10,21 @@ image_paths_list = [os.path.join(image_folder, filename) for filename in image_p
                     filename.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
 with gr.Blocks() as demo:
-
     def update_preview_image(evt: gr.SelectData):
         return image_paths_list[evt.index]
 
+
     def show_result_gallery():
         return {result_gallery: gr.Gallery(visible=True)}
+
+
+    def algo_setter():
+        pass
+
+
+    def result_img_path_setter():
+        pass
+
 
     with gr.Row():
         with gr.Column():
@@ -26,14 +35,15 @@ with gr.Blocks() as demo:
                 value=image_paths_list,  # List of dictionaries with image data
                 visible=True,
                 allow_preview=False,
-                label = "Select an image"
+                label="Select an image"
             )
 
         with gr.Column():
             gr.HTML("<center><h1>Preview</h1></center>")
-            preview_image = gr.Image(value="images/1.jpg",show_label=False, label="Preview Image",width = 400, height = 270)
+            preview_image = gr.Image(value="images/1.jpg", show_label=False, label="Preview Image", width=400,
+                                     height=270)
             Algo = {"Intensity", "Color code"}
-            gr.Dropdown(choices=Algo, visible=True, label="Select Method")
+            dropdown = gr.Dropdown(choices=Algo, visible=True, label="Select Method")
             button = gr.Button("Run")
 
     gr.HTML("'<hr>'")
@@ -47,15 +57,12 @@ with gr.Blocks() as demo:
                 value=image_paths_list,  # List of dictionaries with image data
                 visible=False,
                 min_width=600,
-                label = "Result List",
+                label="Result List",
                 interactive="True"
             )
 
-    gallery.select(update_preview_image,None,preview_image)
-    button.click(show_result_gallery,None,result_gallery)
-
+    gallery.select(update_preview_image, None, preview_image)
+    button.click(show_result_gallery, None, result_gallery)
 
 if __name__ == "__main__":
     demo.launch()
-
-
