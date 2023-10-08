@@ -30,6 +30,10 @@ def intensity_code_histogram():
 
 
 def manhattan_dist(selected_img, other_img):
+    sum = 0
+    for i in range(1, 26):
+        sum = +abs((selected_img[i] / selected_img[0]) - (other_img[i] / other_img[0]))
+    print(sum)
 
 
 class Algo:
@@ -38,6 +42,9 @@ class Algo:
         self.ic_feature_matrix = [[0] * 26] * num_img
 
 
-ic_bins = intensity_code_histogram()
+f_mat = intensity_code_histogram()
 np.set_printoptions(suppress=True)
-print(ic_bins)
+print(f_mat)
+manhattan_dist(f_mat[0], f_mat[0])
+manhattan_dist(f_mat[0], f_mat[1])
+manhattan_dist(f_mat[0], f_mat[2])
