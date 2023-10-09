@@ -2,10 +2,11 @@ from math import *
 import cv2
 import numpy as np
 import os
+from multiprocessing import Pool
 
 # calculate number of images in a folder
 num_img = 0
-for im in os.listdir("test_images"):
+for im in os.listdir("images"):
     num_img += 1
 
 
@@ -41,24 +42,62 @@ def color_code_histogram():
     return feature_mat
 
 
-def intensity_code_histogram():
-    img_folder = "test_images"
-    feature_mat = np.zeros(num_img * 26).reshape(num_img, 26)
-    count = 0
-    for cur_img in os.listdir(img_folder):
-        image = cv2.imread(os.path.join(img_folder, cur_img))
-        histogram = np.zeros(26, dtype=np.int32)
-        histogram[0] = image.size
-        for row in image:
-            for pixel in row:
-                # open cv follows BGR -> B[0], G[1], R[2]
-                intensity = 0.299 * pixel[2] + 0.587 * pixel[1] + 0.114 * pixel[0]
-                bin_index = int(intensity / 10)
+def process_image_cc(image_path):
+    pass
+
+
+def process_image_ic(image_path):
+    image = cv2.imread(image_path)
+    histogram = np.zeros(26, dtype=np.int32)
+    histogram[0] = image.size
+    for row in image:
+        for pixel in row:
+            intensity = 0.299 * pixel[2] + 0.587 * pixel[1] + 0.114 * pixel[0]
+            bin_index = int(intensity / 10)
+            if (bin_index == 25):
+                histogram[bin_index] += 1
+            else:
                 histogram[bin_index + 1] += 1
+    return histogram
+
+
+def pmap(func, iterable, num_processes=None):
+    if num_processes is None:
+        num_processes = os.cpu_count()  # Use all available CPU cores by default
+
+    with Pool(num_processes) as pool:
+        return pool.map(func, iterable)
+
+
+def intensity_code_histogram(img_folder_):
+    image_paths = [os.path.join(img_folder_, cur_img) for cur_img in os.listdir(img_folder_)]
+    histograms = pmap(process_image_ic, image_paths)  # Process images in parallel
+
+    num_imgs = len(image_paths)
+    feature_mat = np.zeros(num_imgs * 26).reshape(num_imgs, 26)
+    for count, histogram in enumerate(histograms):
         feature_mat[count] = histogram
-        # print(histogram)
-        count += 1
     return feature_mat
+
+
+# def intensity_code_histogram():
+#     img_folder = "test_images"
+#     feature_mat = np.zeros(num_img * 26).reshape(num_img, 26)
+#     count = 0
+#     for cur_img in os.listdir(img_folder):
+#         image = cv2.imread(os.path.join(img_folder, cur_img))
+#         histogram = np.zeros(26, dtype=np.int32)
+#         histogram[0] = image.size
+#         for row in image:
+#             for pixel in row:
+#                 # open cv follows BGR -> B[0], G[1], R[2]
+#                 intensity = 0.299 * pixel[2] + 0.587 * pixel[1] + 0.114 * pixel[0]
+#                 bin_index = int(intensity / 10)
+#                 histogram[bin_index + 1] += 1
+#         feature_mat[count] = histogram
+#         # print(histogram)
+#         count += 1
+#     return feature_mat
 
 
 def manhattan_dist(selected_img, other_img):
@@ -68,18 +107,20 @@ def manhattan_dist(selected_img, other_img):
     return d
 
 
-def get_distance_vector(selected_img):
+def get_distance_vector(selected_img, f_mat):
     dist_vector = np.zeros(num_img, dtype=np.float64)
     for i in range(0, num_img):
         dist_vector[i] = (manhattan_dist(selected_img, f_mat[i]))
     return dist_vector
 
 
-# testing functions for INTENSITY
-f_mat = color_code_histogram()
-np.set_printoptions(suppress=True)
-print(np.array2string(f_mat, separator=', '))
+# testing parallelized functions for INTENSITY
+if __name__ == "__main__":
+    img_folder = "images"
+    result = intensity_code_histogram(img_folder)
+    np.set_printoptions(suppress=True)
+    print(np.array2string(result, separator=", "))
 
-print("\n >now getting distance vector")
-dv = get_distance_vector(f_mat[1])
-print(np.array2string(dv, separator=', '))
+    print("\n Now calculating the distance array")
+    dv = get_distance_vector(result[99], result)
+    print(dv)
