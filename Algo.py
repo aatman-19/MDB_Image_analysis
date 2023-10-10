@@ -11,8 +11,11 @@ for im in os.listdir("images"):
 
 
 class Algo:
+    cc_bin_size = 65
+    ic_bin_size = 26
+
     def __init__(self):
-        self.cc_feature_matrix = [[0] * 65] * num_img
+        self.cc_feature_matrix = [[0] * 64] * num_img
         self.ic_feature_matrix = [[0] * 26] * num_img
         self.num_images = num_img
 
@@ -129,28 +132,27 @@ def intensity_code_feature_map(img_folder_):
 #         count += 1
 #     return feature_mat
 
-
-def manhattan_dist(selected_img, other_img):
+def manhattan_dist(selected_img, other_img, bin_size):
     d = 0
-    for i in range(1, 26):
+    for i in range(1, bin_size):
         d += abs((selected_img[i] / selected_img[0]) - (other_img[i] / other_img[0]))
     return d
 
 
-def get_distance_vector(selected_img, f_mat):
+def get_distance_vector(selected_img, f_mat, bin_size):
     dist_vector = np.zeros(num_img, dtype=np.float64)
     for i in range(0, num_img):
-        dist_vector[i] = (manhattan_dist(selected_img, f_mat[i]))
+        dist_vector[i] = (manhattan_dist(selected_img, f_mat[i], bin_size))
     return dist_vector
 
 
 # testing parallelized functions for INTENSITY
 if __name__ == "__main__":
     img_folder = "images"
-    result = color_code_feature_map(img_folder)
+    result = intensity_code_feature_map(img_folder)
     np.set_printoptions(suppress=True)
     print(np.array2string(result, separator=", "))
 
     print("\n Now calculating the distance array")
-    dv = get_distance_vector(result[99], result)
+    dv = get_distance_vector(result[99], result, 26)
     print(dv)
