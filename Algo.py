@@ -1,4 +1,3 @@
-from math import *
 import cv2
 import numpy as np
 import os
@@ -9,15 +8,16 @@ num_img = 0
 for im in os.listdir("images"):
     num_img += 1
 
-class Algo:
-    cc_bin_size = 65
-    ic_bin_size = 26
 
-    def __init__(self, algo_name, preview_image_index):
+class Algo:
+
+    def __init__(self, algo_code, preview_image_index):
         self.cc_feature_matrix = [[0] * 64] * num_img
         self.ic_feature_matrix = [[0] * 26] * num_img
         self.num_images = num_img
         self.preview_image_index = preview_image_index
+        self.algo_code = algo_code
+        self.bin_size = [26, 65]
 
     def process_image_cc(self, image_path):
         image = cv2.imread(image_path)
