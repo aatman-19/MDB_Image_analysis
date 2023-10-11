@@ -19,7 +19,7 @@ with gr.Blocks() as demo:
     def update_preview_image(evt: gr.SelectData):
         global curr_preview_index
         curr_preview_index = evt.index
-        print(curr_preview_index)
+        # print(curr_preview_index)
         return image_paths_list[evt.index]
 
 
@@ -33,6 +33,7 @@ with gr.Blocks() as demo:
 
         distance_vector = Algo.get_distance_vector(obj, feature_matrix[obj.preview_image_index], feature_matrix,
                                                    obj.bin_size[obj.algo_code])
+
         sorted_indices = np.argsort(distance_vector)
         sorted_images = [result_paths_list[i] for i in sorted_indices]
 
@@ -43,7 +44,7 @@ with gr.Blocks() as demo:
         # obj = Algo(evt.index, curr_preview_index)
         global curr_algo_index
         curr_algo_index = evt.index
-        print(f"algo selected ={evt.index}, preview_index = {curr_preview_index}")
+        print(f"algo selected ={evt.value}, preview_index = {curr_preview_index}")
 
 
     def result_img_path_setter():
