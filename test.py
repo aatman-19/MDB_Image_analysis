@@ -6,8 +6,8 @@ import os
 
 if __name__ == "__main__":
     img_folder_ = "images"
-    obj = Algo(0, 1)
-    result = Algo.intensity_code_feature_map(obj, img_folder_)
+    obj = Algo(1, 1)
+    result = Algo.color_code_feature_map(obj, img_folder_)
     np.set_printoptions(suppress=True)
     print(np.array2string(result, separator=", "))
 
