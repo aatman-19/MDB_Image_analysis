@@ -14,7 +14,29 @@ class Algo:
         self.num_images = num_img
         self.preview_image_index = preview_image_index
         self.algo_code = algo_code
-        self.bin_size = [26, 65]
+        self.bin_size = [26, 65, 90]
+
+    def icc_feature_matrix(self, img_folder):
+        img_paths = os.listdir(img_folder)
+        ic_mat = self.intensity_code_feature_matrix(img_folder)
+        cc_mat = self.color_code_feature_matrix(img_folder)
+        feature_mat = np.concatenate((ic_mat[:, :], (cc_mat[:, 1:])), axis=1)
+        mean_arr = np.mean(feature_mat, axis=1)
+        std_arr = np.std(feature_mat, axis=1)
+        feature_mat = np.array(feature_mat)
+
+        normalized_feature_mat = np.zeros((len(img_paths), 90), dtype=np.int32)
+
+        for i in range(0, feature_mat.shape[0]):
+            norm_row = list()
+            norm_row.append(feature_mat[i][0])
+            for j in range(1, feature_mat.shape[1]):
+                norm_row.append((feature_mat[i][j] - mean_arr[i]) / std_arr[i])
+            # print(norm_row)
+            normalized_feature_mat[i] = norm_row
+        # print(normalized_feature_mat.shape)
+
+        return feature_mat
 
     def color_code_feature_matrix(self, img_folder):
         global num_img

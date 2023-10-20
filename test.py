@@ -6,10 +6,12 @@ import os
 
 if __name__ == "__main__":
     img_folder_ = "images"
-    obj = Algo(1, 1)
-    result = Algo.color_code_feature_map(obj, img_folder_)
+    obj = Algo(2, 0)
+    result = Algo.icc_feature_matrix(obj, img_folder_)
+    result = np.array(result)
     np.set_printoptions(suppress=True)
     print(np.array2string(result, separator=", "))
+    print(result.shape)
 
     # print("\n Now calculating the distance array")
     # dv = Algo.get_distance_vector(obj, result[obj.preview_image_index], result, obj.bin_size[obj.algo_code])

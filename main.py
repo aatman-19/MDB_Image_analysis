@@ -11,7 +11,7 @@ image_paths_list = [os.path.join(image_folder, filename) for filename in image_p
                     filename.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
 curr_preview_index = 0
-curr_algo_index = 0
+curr_algo_index = None
 
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
     # functions for event listeners
@@ -31,8 +31,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         # calling appropriate feature_matrix function based on selected algorithm
         if curr_algo_index == 0:
             feature_matrix = Algo.intensity_code_feature_matrix(obj, image_folder)
-        else:
+        elif curr_algo_index == 1:
             feature_matrix = Algo.color_code_feature_matrix(obj, image_folder)
+        else:
+            feature_matrix = Algo.icc_feature_matrix(obj, image_folder)
 
         distance_vector = Algo.get_distance_vector(obj, feature_matrix[obj.preview_image_index], feature_matrix,
                                                    obj.bin_size[obj.algo_code])
@@ -44,6 +46,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         sorted_images = [result_paths_list[i] for i in sorted_indices]
         print(f"algo selected ={curr_algo_index}, preview_index = {curr_preview_index}")
         return {result_gallery: gr.Gallery(visible=True, value=sorted_images)}
+
 
     def dropdown_algo_setter(evt: gr.SelectData):
         global curr_algo_index
@@ -66,7 +69,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         with gr.Column(variant='panel'):
             gr.HTML("<center><h1>Preview</h1></center>")
             preview_image = gr.Image(value="images/1.jpg", show_label=False, label="Preview Image", width=300)
-            methods = ["Intensity", "Color code"]
+            methods = ["Intensity", "Color code", "Intensity + Color code"]
             dropdown = gr.Dropdown(choices=methods, visible=True, label="Select Method")
             button = gr.Button("Run")
 
