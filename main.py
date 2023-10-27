@@ -10,19 +10,27 @@ image_paths = os.listdir(image_folder)
 image_paths_list = [os.path.join(image_folder, filename) for filename in image_paths if
                     filename.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
+captions = [i[7:0] for i in image_paths_list]
+
 curr_preview_index = 0
 curr_algo_index = None
+curr_sorted_list = image_paths_list
+curr_cb_index = 0
+rf_iteration = 0
+box = []
 
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
-    # functions for event listeners
+    # functions for event listeners - a1
     def update_preview_image(evt: gr.SelectData):
         global curr_preview_index
         curr_preview_index = evt.index
+        rf_reset()
         # print(curr_preview_index)
         return image_paths_list[evt.index]
 
 
     def show_result_gallery():
+        global curr_sorted_list
         result_paths_list = image_paths_list
 
         # creating an object pf Algo class
@@ -44,13 +52,57 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
         # using the indices to create a result list, without losing the correct image path
         sorted_images = [result_paths_list[i] for i in sorted_indices]
+        curr_sorted_list = sorted_images
         print(f"algo selected ={curr_algo_index}, preview_index = {curr_preview_index}")
         return {result_gallery: gr.Gallery(visible=True, value=sorted_images)}
+        # return {rf_grid: gr.Column(visible=True)}
 
 
     def dropdown_algo_setter(evt: gr.SelectData):
         global curr_algo_index
         curr_algo_index = evt.index
+
+
+    # functions for Relevance feedback algo
+    def rf_reset():
+        global rf_iteration
+        rf_iteration = 0
+
+
+    def rf_itr_increment():
+        global rf_iteration
+        rf_iteration += 1
+
+
+    def rf_inputs(*checkboxes):
+        global box
+        box = checkboxes
+        print(f"checkbox: {checkboxes}")
+
+
+    def show_rf_result_grid():
+        global curr_sorted_list
+        rf_images_list_ = []
+        if (rf_iteration == 0):
+            rf_obj = Algo(2, curr_preview_index)
+            feature_matrix = Algo.icc_feature_matrix(rf_obj, image_folder)
+            distance_vector = Algo.get_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
+                                                       feature_matrix,
+                                                       rf_obj.bin_size[rf_obj.algo_code])
+
+            # using argsort to get the indices of sorted array
+            sorted_indices = np.argsort(distance_vector)
+            curr_sorted_list = [image_paths_list[i] for i in sorted_indices]
+            for i in curr_sorted_list:
+                rf_images_list_.append(gr.Image(value=i, label=i[7:]))
+            print(curr_sorted_list)
+
+        elif (rf_iteration >= 1):
+            pass
+
+        rf_itr_increment()
+        print(f"rf iteration: {rf_iteration}")
+        return rf_images_list_
 
 
     # GUI
@@ -72,6 +124,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             methods = ["Intensity", "Color code", "Intensity + Color code"]
             dropdown = gr.Dropdown(choices=methods, visible=True, label="Select Method")
             button = gr.Button("Run")
+            rf_button = gr.Button("Run RF")
 
     # GUI - Result view
     gr.HTML("<hr>")
@@ -86,13 +139,35 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 visible=False,
                 min_width=600,
                 label="Result List",
-                interactive="True"
+                interactive="True",
             )
 
+    # GUI - RF Result view
+    gr.HTML("<hr>")
+    rf_result = gr.Column(visible=True, variant='panel')
+    with rf_result:
+        gr.HTML("<center><h2>RF Result View</h2></center>")
+        cols = 5
+        rows = 20
+        count = 0
+        rf_checkbox = []
+        rf_images_list = []
+        for i in range(0, rows):
+            with gr.Row(equal_height=True):
+                for j in range(0, cols):
+                    with gr.Group():
+                        rf_images_list.append(
+                            gr.Image(value=curr_sorted_list[count], label=image_paths_list[count][7:]))
+                        rf_checkbox.append(gr.Checkbox(label=str(count), info="Relevant"))
+                        count += 1
+
+    # image_view, rf = image_grid(curr_sorted_list)
     # Event listeners for preview_gallery, run button & dropdown menu
-    gallery.select(update_preview_image, None, preview_image)
+    gallery.select(fn=update_preview_image, inputs=None, outputs=preview_image)
     dropdown.select(dropdown_algo_setter)
-    button.click(show_result_gallery, None, result_gallery)
+    button.click(fn=show_result_gallery, inputs=None, outputs=result_gallery)
+    rf_button.click(fn=rf_inputs, inputs=rf_checkbox, outputs=None)
+    rf_button.click(fn=show_rf_result_grid, inputs=None, outputs=rf_images_list)
 
 if __name__ == "__main__":
     demo.launch()

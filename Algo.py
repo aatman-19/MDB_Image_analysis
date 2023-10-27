@@ -15,6 +15,7 @@ class Algo:
         self.preview_image_index = preview_image_index
         self.algo_code = algo_code
         self.bin_size = [26, 65, 90]
+        self.rf_inputs = []
 
     def icc_feature_matrix(self, img_folder):
         img_paths = os.listdir(img_folder)
