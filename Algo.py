@@ -17,24 +17,44 @@ class Algo:
         self.bin_size = [26, 65, 90]
         self.rf_inputs = []
 
+    def normalized_icc_feature_matrix(self, img_folder):
+        img_paths = os.listdir(img_folder)
+        histogram_icc = self.icc_feature_matrix(img_folder)
+        feature_mat = []
+
+        # generating features from histogram
+        print(f"histogram shape: {histogram_icc.shape}")
+        for i in range(0, histogram_icc.shape[0]):
+            feature_row = []
+            for j in range(1, histogram_icc.shape[1]):
+                feature_row.append(histogram_icc[i][j] / histogram_icc[i][0])
+                # print(feature_row)
+            feature_mat.append(feature_row)
+
+        feature_mat = np.array(feature_mat)
+        # print(f"feature_matrix = {feature_mat}")
+        # generating norm_feature matrix from features
+        normalized_feature_mat = []
+        mean_arr = np.mean(feature_mat, axis=1)
+        std_arr = np.std(feature_mat, axis=1)
+        print(f"shapes: mean_arr: {mean_arr.shape}, std_arr:{std_arr.shape}")
+
+        for i in range(0, feature_mat.shape[0]):
+            norm_row = []
+            norm_row.append(feature_mat[i][0])
+            for j in range(1, feature_mat.shape[1]):
+                norm_row.append((feature_mat[i][j] - mean_arr[i]) / std_arr[i])
+            # print(norm_row)
+            normalized_feature_mat.append(norm_row)
+        # print(normalized_feature_mat)
+        return normalized_feature_mat
+
     def icc_feature_matrix(self, img_folder):
         img_paths = os.listdir(img_folder)
         ic_mat = self.intensity_code_feature_matrix(img_folder)
         cc_mat = self.color_code_feature_matrix(img_folder)
         feature_mat = np.concatenate((ic_mat[:, :], (cc_mat[:, 1:])), axis=1)
-        mean_arr = np.mean(feature_mat, axis=1)
-        std_arr = np.std(feature_mat, axis=1)
         feature_mat = np.array(feature_mat)
-
-        normalized_feature_mat = np.zeros((len(img_paths), 90), dtype=np.int32)
-
-        for i in range(0, feature_mat.shape[0]):
-            norm_row = list()
-            norm_row.append(feature_mat[i][0])
-            for j in range(1, feature_mat.shape[1]):
-                norm_row.append((feature_mat[i][j] - mean_arr[i]) / std_arr[i])
-            # print(norm_row)
-            normalized_feature_mat[i] = norm_row
         # print(normalized_feature_mat.shape)
 
         return feature_mat
@@ -100,6 +120,20 @@ class Algo:
             d += abs((selected_img[i] / selected_img[0]) - (other_img[i] / other_img[0]))
         return d
 
+    def manhattan_dist_norm(self, selected_img, other_img, bin_size, weights):
+        d = 0
+        for i in range(0, bin_size):
+            d += abs(selected_img[i] - other_img[i]) * weights[i]
+        return d
+
+    def get_norm_distance_vector(self, selected_img, f_mat, bin_size, weights):
+        if (weights == None):
+            weights = np.array([(1 / 89)] * 89)
+        norm_dist_vector = np.zeros(num_img, dtype=np.float64)
+        for i in range(0, num_img):
+            norm_dist_vector[i] = self.manhattan_dist_norm(selected_img, f_mat[i], bin_size, weights)
+        return norm_dist_vector
+
     # goes through the feature matrix & returns a distance vector containing the distance of selected image from all other images
     def get_distance_vector(self, selected_img, f_mat, bin_size):
         dist_vector = np.zeros(num_img, dtype=np.float64)
@@ -107,34 +141,48 @@ class Algo:
             dist_vector[i] = (self.manhattan_dist(selected_img, f_mat[i], bin_size))
         return dist_vector
 
-# parallellized functions
-# def process_image_ic(self, image_path):
-#     image = cv2.imread(image_path)
-#     histogram = np.zeros(26, dtype=np.int32)
-#     histogram[0] = image.size
-#     for row in image:
-#         for pixel in row:
-#             intensity = 0.299 * pixel[2] + 0.587 * pixel[1] + 0.114 * pixel[0]
-#             bin_index = int(intensity / 10)
-#             if (bin_index == 25):
-#                 histogram[bin_index] += 1
-#             else:
-#                 histogram[bin_index + 1] += 1
-#     return histogram
-#
-# def pmap(self, func, iterable, num_processes=None):
-#     if num_processes is None:
-#         num_processes = os.cpu_count()  # Use all available CPU cores by default
-#
-#     with Pool(num_processes) as pool:
-#         return pool.map(func, iterable)
-#
-# def intensity_code_feature_map(self, img_folder_):
-#     image_paths = [os.path.join(img_folder_, cur_img) for cur_img in os.listdir(img_folder_)]
-#     histograms = self.pmap(self.process_image_ic, image_paths)  # Process images in parallel
-#
-#     num_imgs = len(image_paths)
-#     feature_mat = np.zeros(num_imgs * 26).reshape(num_imgs, 26)
-#     for count, histogram in enumerate(histograms):
-#         feature_mat[count] = histogram
-#     return feature_mat
+    # parallellized functions
+    # def process_image_ic(self, image_path):
+    #     image = cv2.imread(image_path)
+    #     histogram = np.zeros(26, dtype=np.int32)
+    #     histogram[0] = image.size
+    #     for row in image:
+    #         for pixel in row:
+    #             intensity = 0.299 * pixel[2] + 0.587 * pixel[1] + 0.114 * pixel[0]
+    #             bin_index = int(intensity / 10)
+    #             if (bin_index == 25):
+    #                 histogram[bin_index] += 1
+    #             else:
+    #                 histogram[bin_index + 1] += 1
+    #     return histogram
+    #
+    # def pmap(self, func, iterable, num_processes=None):
+    #     if num_processes is None:
+    #         num_processes = os.cpu_count()  # Use all available CPU cores by default
+    #
+    #     with Pool(num_processes) as pool:
+    #         return pool.map(func, iterable)
+    #
+    # def intensity_code_feature_map(self, img_folder_):
+    #     image_paths = [os.path.join(img_folder_, cur_img) for cur_img in os.listdir(img_folder_)]
+    #     histograms = self.pmap(self.process_image_ic, image_paths)  # Process images in parallel
+    #
+    #     num_imgs = len(image_paths)
+    #     feature_mat = np.zeros(num_imgs * 26).reshape(num_imgs, 26)
+    #     for count, histogram in enumerate(histograms):
+    #         feature_mat[count] = histogram
+    #     return feature_mat
+    def fetch_features(self, selected_img, ):
+        pass
+
+    def get_weights(self, rf_inputs, selected_img, curr_img_list, img_folder):
+        weights = np.array([1 / 89] * 89)
+        selected_img_paths = []
+        for i in range(0, 100):
+            if rf_inputs[i]:
+                selected_img_paths.append(curr_img_list[i])
+        norm_f_mat = self.normalized_icc_feature_matrix(img_folder)
+        num_inputs = len(selected_img_paths)
+        # get features of selected imgs from the norm_f_mat
+        # use the sd formula to update weights
+        pass

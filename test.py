@@ -7,11 +7,13 @@ import os
 if __name__ == "__main__":
     img_folder_ = "images"
     obj = Algo(2, 0)
-    result = Algo.icc_feature_matrix(obj, img_folder_)
-    result = np.array(result)
-    np.set_printoptions(suppress=True)
-    print(np.array2string(result, separator=", "))
-    print(result.shape)
+    norm_f_mat = Algo.normalized_icc_feature_matrix(obj, img_folder_)
+    norm_f_mat = np.array(norm_f_mat)
+
+    dv = Algo.get_norm_distance_vector(obj, norm_f_mat[obj.preview_image_index], norm_f_mat, 89, None)
+    # np.set_printoptions(suppress=False)
+    # print(np.array2string(dv, separator=", "))
+    print(dv)
 
     # print("\n Now calculating the distance array")
     # dv = Algo.get_distance_vector(obj, result[obj.preview_image_index], result, obj.bin_size[obj.algo_code])

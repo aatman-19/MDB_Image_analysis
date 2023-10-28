@@ -87,8 +87,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             rf_obj = Algo(2, curr_preview_index)
             feature_matrix = Algo.icc_feature_matrix(rf_obj, image_folder)
             distance_vector = Algo.get_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
-                                                       feature_matrix,
-                                                       rf_obj.bin_size[rf_obj.algo_code])
+                                                       feature_matrix, rf_obj.bin_size[rf_obj.algo_code])
 
             # using argsort to get the indices of sorted array
             sorted_indices = np.argsort(distance_vector)
