@@ -122,12 +122,12 @@ class Algo:
 
     def manhattan_dist_norm(self, selected_img, other_img, bin_size, weights):
         d = 0
-        for i in range(0, bin_size):
+        for i in range(0, bin_size - 1):
             d += abs(selected_img[i] - other_img[i]) * weights[i]
         return d
 
     def get_norm_distance_vector(self, selected_img, f_mat, bin_size, weights):
-        if (weights == None):
+        if weights is None:
             weights = np.array([(1 / 89)] * 89)
         norm_dist_vector = np.zeros(num_img, dtype=np.float64)
         for i in range(0, num_img):
@@ -172,17 +172,68 @@ class Algo:
     #     for count, histogram in enumerate(histograms):
     #         feature_mat[count] = histogram
     #     return feature_mat
-    def fetch_features(self, selected_img, ):
-        pass
+    def fetch_indices(self, selected_img, img_folder, selected_img_paths):
+
+        img_paths = os.listdir(img_folder)
+        img_paths_list = [os.path.join(img_folder, filename) for filename in img_paths if
+                          filename.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        org_indices = []
+        for i in range(0, 100):
+            for j in range(0, len(selected_img_paths)):
+                if img_paths_list[i] == selected_img_paths[j]:
+                    org_indices.append(i)
+                elif img_paths_list[i] == selected_img:
+                    org_indices.append(i)
+        ret = np.unique(org_indices)
+        return ret
 
     def get_weights(self, rf_inputs, selected_img, curr_img_list, img_folder):
-        weights = np.array([1 / 89] * 89)
         selected_img_paths = []
         for i in range(0, 100):
             if rf_inputs[i]:
                 selected_img_paths.append(curr_img_list[i])
         norm_f_mat = self.normalized_icc_feature_matrix(img_folder)
-        num_inputs = len(selected_img_paths)
+        indices = self.fetch_indices(selected_img, img_folder, selected_img_paths)
+        # print(indices)
+        num_selected = len(selected_img_paths)
         # get features of selected imgs from the norm_f_mat
-        # use the sd formula to update weights
-        pass
+        features_to_update = np.array([norm_f_mat[i] for i in indices])
+        # print(f"shape of features:{features_to_update.shape}")
+        # print(features_to_update)
+        std_of_features = []
+        zero_std_value = False
+        zero_std_cols = []
+        zero_std_indices = []
+        non_zero_std_indices = []
+
+        for j in range(0, 89):
+            std = np.std(features_to_update[:, j], axis=0)
+            # zero_std = np.where(std_arr == 0)[0]
+            if std == 0:
+                zero_std_value = True
+                zero_std_cols.append(j)
+            else:
+                non_zero_std_indices.append(j)
+            std_of_features.append(std)
+
+        # print(f"std array={std_of_features}")
+
+        updated_weights = [0] * 89
+        # print(updated_weights)
+
+        if not zero_std_value:
+            for i in range(0, 89):
+                updated_weights[i] = (1 / std_of_features[i])
+        # edge cases in std (where std == 0)
+        else:
+            for col in zero_std_cols:
+                mean_col = np.mean(features_to_update[:, col], axis=0)
+                if mean_col == 0:
+                    updated_weights[col] = 0
+                elif mean_col != 0:
+                    updated_weights[col] = 0.5 * min(std_of_features[j] for j in non_zero_std_indices)
+        # print(f"updated w : {updated_weights}")
+        total_w = sum(updated_weights)
+        norm_weights = [(updated_w / total_w) for updated_w in updated_weights]
+
+        return norm_weights

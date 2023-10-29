@@ -80,24 +80,35 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         print(f"checkbox: {checkboxes}")
 
 
-    def show_rf_result_grid():
+    def show_rf_result_grid(*rf_checkboxes):
         global curr_sorted_list
         rf_images_list_ = []
-        if (rf_iteration == 0):
+        if rf_iteration == 0:
+            weights = [1 / 89] * 89
             rf_obj = Algo(2, curr_preview_index)
-            feature_matrix = Algo.icc_feature_matrix(rf_obj, image_folder)
-            distance_vector = Algo.get_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
-                                                       feature_matrix, rf_obj.bin_size[rf_obj.algo_code])
+            feature_matrix = Algo.normalized_icc_feature_matrix(rf_obj, image_folder)
+            distance_vector = Algo.get_norm_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
+                                                            feature_matrix, rf_obj.bin_size[rf_obj.algo_code],
+                                                            weights)
 
             # using argsort to get the indices of sorted array
             sorted_indices = np.argsort(distance_vector)
             curr_sorted_list = [image_paths_list[i] for i in sorted_indices]
             for i in curr_sorted_list:
                 rf_images_list_.append(gr.Image(value=i, label=i[7:]))
-            print(curr_sorted_list)
+            # print(curr_sorted_list)
 
-        elif (rf_iteration >= 1):
-            pass
+        elif rf_iteration >= 1:
+            rf_obj = Algo(2, curr_preview_index)
+            feature_matrix = Algo.normalized_icc_feature_matrix(rf_obj, image_folder)
+            weights = Algo.get_weights(rf_obj, rf_checkboxes, feature_matrix[rf_obj.preview_image_index],
+                                       curr_sorted_list, image_folder)
+            distance_vector = Algo.get_norm_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
+                                                            feature_matrix, 89, weights)
+            sorted_indices = np.argsort(distance_vector)
+            curr_sorted_list = [image_paths_list[i] for i in sorted_indices]
+            for i in curr_sorted_list:
+                rf_images_list_.append(gr.Image(value=i, label=i[7:]))
 
         rf_itr_increment()
         print(f"rf iteration: {rf_iteration}")
@@ -166,7 +177,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     dropdown.select(dropdown_algo_setter)
     button.click(fn=show_result_gallery, inputs=None, outputs=result_gallery)
     rf_button.click(fn=rf_inputs, inputs=rf_checkbox, outputs=None)
-    rf_button.click(fn=show_rf_result_grid, inputs=None, outputs=rf_images_list)
+    rf_button.click(fn=show_rf_result_grid, inputs=rf_checkbox, outputs=rf_images_list)
 
 if __name__ == "__main__":
     demo.launch()
