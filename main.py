@@ -80,6 +80,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         print(f"checkbox: {checkboxes}")
 
 
+    def rf_cb_reset(*checkboxes):
+        reset_cb = [False] * 100
+        checkboxes = tuple(reset_cb)
+        return checkboxes
+
+
     def show_rf_result_grid(*rf_checkboxes):
         global curr_sorted_list
         rf_images_list_ = []
@@ -88,7 +94,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             rf_obj = Algo(2, curr_preview_index)
             feature_matrix = Algo.normalized_icc_feature_matrix(rf_obj, image_folder)
             distance_vector = Algo.get_norm_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
-                                                            feature_matrix, rf_obj.bin_size[rf_obj.algo_code],
+                                                            feature_matrix, 89,
                                                             weights)
 
             # using argsort to get the indices of sorted array
@@ -113,6 +119,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         rf_itr_increment()
         print(f"rf iteration: {rf_iteration}")
         return rf_images_list_
+
+
+    def make_rf_result_visible():
+        return {rf_result: gr.Column(visible=True)}
 
 
     # GUI
@@ -140,7 +150,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     gr.HTML("<hr>")
     with gr.Row():
         with gr.Column(variant='panel'):
-            gr.HTML("<center><h2>Result View</h2></center>")
+            # gr.HTML("<center><h2>Result View</h2></center>")
             result_gallery = gr.Gallery(
                 columns=10,
                 rows=10,
@@ -148,13 +158,13 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 value=image_paths_list,
                 visible=False,
                 min_width=600,
-                label="Result List",
+                label="Result List (without RF)",
                 interactive="True",
             )
 
     # GUI - RF Result view
     gr.HTML("<hr>")
-    rf_result = gr.Column(visible=True, variant='panel')
+    rf_result = gr.Column(visible=False, variant='panel')
     with rf_result:
         gr.HTML("<center><h2>RF Result View</h2></center>")
         cols = 5
@@ -171,13 +181,14 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                         rf_checkbox.append(gr.Checkbox(label=str(count), info="Relevant"))
                         count += 1
 
-    # image_view, rf = image_grid(curr_sorted_list)
     # Event listeners for preview_gallery, run button & dropdown menu
     gallery.select(fn=update_preview_image, inputs=None, outputs=preview_image)
     dropdown.select(dropdown_algo_setter)
     button.click(fn=show_result_gallery, inputs=None, outputs=result_gallery)
+    rf_button.click(fn=make_rf_result_visible, inputs=None, outputs=rf_result)
     rf_button.click(fn=rf_inputs, inputs=rf_checkbox, outputs=None)
     rf_button.click(fn=show_rf_result_grid, inputs=rf_checkbox, outputs=rf_images_list)
+    rf_button.click(fn=rf_cb_reset, inputs=rf_checkbox, outputs=rf_checkbox)
 
 if __name__ == "__main__":
     demo.launch()

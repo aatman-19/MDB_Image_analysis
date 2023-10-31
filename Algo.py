@@ -32,18 +32,30 @@ class Algo:
             feature_mat.append(feature_row)
 
         feature_mat = np.array(feature_mat)
-        # print(f"feature_matrix = {feature_mat}")
+        avg_arr = []
+        std_arr = []
+        for j in range(0, 89):
+            std = np.std(feature_mat[:, j], axis=0)
+            avg = np.mean(feature_mat[:, j], axis=0)
+            std_arr.append(std)
+            avg_arr.append(avg)
+        std_arr = np.array(std_arr)
+        avg_arr = np.array(avg_arr)
+        print(f"feature_matrix shape = {feature_mat.shape}")
         # generating norm_feature matrix from features
         normalized_feature_mat = []
-        mean_arr = np.mean(feature_mat, axis=1)
-        std_arr = np.std(feature_mat, axis=1)
-        print(f"shapes: mean_arr: {mean_arr.shape}, std_arr:{std_arr.shape}")
+        print(f"mean_arr[0]: {avg_arr}")
+        print(f"std_arr[0]: {std_arr}")
+        print(f"shapes: mean_arr: {avg_arr.shape}, std_arr:{std_arr.shape}")
 
         for i in range(0, feature_mat.shape[0]):
             norm_row = []
             norm_row.append(feature_mat[i][0])
             for j in range(1, feature_mat.shape[1]):
-                norm_row.append((feature_mat[i][j] - mean_arr[i]) / std_arr[i])
+                if std_arr[j] == 0:
+                    norm_row.append(feature_mat[i][j])
+                else:
+                    norm_row.append((feature_mat[i][j] - avg_arr[j]) / std_arr[j])
             # print(norm_row)
             normalized_feature_mat.append(norm_row)
         # print(normalized_feature_mat)
@@ -122,13 +134,11 @@ class Algo:
 
     def manhattan_dist_norm(self, selected_img, other_img, bin_size, weights):
         d = 0
-        for i in range(0, bin_size - 1):
+        for i in range(0, bin_size):
             d += abs(selected_img[i] - other_img[i]) * weights[i]
         return d
 
     def get_norm_distance_vector(self, selected_img, f_mat, bin_size, weights):
-        if weights is None:
-            weights = np.array([(1 / 89)] * 89)
         norm_dist_vector = np.zeros(num_img, dtype=np.float64)
         for i in range(0, num_img):
             norm_dist_vector[i] = self.manhattan_dist_norm(selected_img, f_mat[i], bin_size, weights)
@@ -201,17 +211,16 @@ class Algo:
         # print(f"shape of features:{features_to_update.shape}")
         # print(features_to_update)
         std_of_features = []
-        zero_std_value = False
+        # zero_std_value = False
         zero_std_cols = []
         zero_std_indices = []
         non_zero_std_indices = []
 
         for j in range(0, 89):
             std = np.std(features_to_update[:, j], axis=0)
-            # zero_std = np.where(std_arr == 0)[0]
             if std == 0:
-                zero_std_value = True
-                zero_std_cols.append(j)
+                # zero_std_value = True
+                zero_std_indices.append(j)
             else:
                 non_zero_std_indices.append(j)
             std_of_features.append(std)
@@ -221,18 +230,35 @@ class Algo:
         updated_weights = [0] * 89
         # print(updated_weights)
 
-        if not zero_std_value:
-            for i in range(0, 89):
-                updated_weights[i] = (1 / std_of_features[i])
-        # edge cases in std (where std == 0)
-        else:
-            for col in zero_std_cols:
-                mean_col = np.mean(features_to_update[:, col], axis=0)
-                if mean_col == 0:
-                    updated_weights[col] = 0
-                elif mean_col != 0:
-                    updated_weights[col] = 0.5 * min(std_of_features[j] for j in non_zero_std_indices)
+        # if not zero_std_value:
+        #     for i in range(0, 89):
+        #         print("std_not_zero")
+        #         updated_weights[i] = (1 / std_of_features[i])
+        # # edge cases in std (where std == 0)
+        # else:
+        #     print("std_zero")
+        #     for col in zero_std_cols:
+        #         mean_col = np.mean(features_to_update[:, col], axis=0)
+        #         if mean_col == 0.00:
+        #             updated_weights[col] = 0
+        #         elif mean_col != 0:
+        #             non_zero_features = [std_of_features[j] for j in non_zero_std_indices]
+        #             updated_weights[col] = min(non_zero_features)/2
         # print(f"updated w : {updated_weights}")
+
+        for i in non_zero_std_indices:
+            # print("non_zero_std")
+            updated_weights[i] = (1 / std_of_features[i])
+
+        for i in zero_std_indices:
+            # print("zero_std")
+            mean_col = np.mean(features_to_update[:, i], axis=0)
+            if mean_col == 0:
+                updated_weights[i] = 0
+            elif mean_col != 0:
+                non_zero_features = [std_of_features[j] for j in non_zero_std_indices]
+                updated_weights[i] = min(non_zero_features) / 2
+
         total_w = sum(updated_weights)
         norm_weights = [(updated_w / total_w) for updated_w in updated_weights]
 
