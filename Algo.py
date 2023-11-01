@@ -26,15 +26,15 @@ class Algo:
         print(f"histogram shape: {histogram_icc.shape}")
         for i in range(0, histogram_icc.shape[0]):
             feature_row = []
-            for j in range(1, histogram_icc.shape[1]):
-                feature_row.append(histogram_icc[i][j] / histogram_icc[i][0])
+            for j in range(0, histogram_icc.shape[1]):
+                feature_row.append(histogram_icc[i][j] / 98304)
                 # print(feature_row)
             feature_mat.append(feature_row)
 
         feature_mat = np.array(feature_mat)
         avg_arr = []
         std_arr = []
-        for j in range(0, 89):
+        for j in range(0, feature_mat.shape[1]):
             std = np.std(feature_mat[:, j], axis=0)
             avg = np.mean(feature_mat[:, j], axis=0)
             std_arr.append(std)
@@ -44,14 +44,13 @@ class Algo:
         print(f"feature_matrix shape = {feature_mat.shape}")
         # generating norm_feature matrix from features
         normalized_feature_mat = []
-        print(f"mean_arr[0]: {avg_arr}")
-        print(f"std_arr[0]: {std_arr}")
         print(f"shapes: mean_arr: {avg_arr.shape}, std_arr:{std_arr.shape}")
+        print(f"mean_arr[1]: {avg_arr}")
+        print(f"std_arr[1]: {std_arr}")
 
         for i in range(0, feature_mat.shape[0]):
             norm_row = []
-            norm_row.append(feature_mat[i][0])
-            for j in range(1, feature_mat.shape[1]):
+            for j in range(0, feature_mat.shape[1]):
                 if std_arr[j] == 0:
                     norm_row.append(feature_mat[i][j])
                 else:
@@ -65,7 +64,7 @@ class Algo:
         img_paths = os.listdir(img_folder)
         ic_mat = self.intensity_code_feature_matrix(img_folder)
         cc_mat = self.color_code_feature_matrix(img_folder)
-        feature_mat = np.concatenate((ic_mat[:, :], (cc_mat[:, 1:])), axis=1)
+        feature_mat = np.concatenate((ic_mat[:, 1:], (cc_mat[:, 1:])), axis=1)
         feature_mat = np.array(feature_mat)
         # print(normalized_feature_mat.shape)
 
