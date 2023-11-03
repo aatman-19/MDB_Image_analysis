@@ -10,8 +10,6 @@ image_paths = os.listdir(image_folder)
 image_paths_list = [os.path.join(image_folder, filename) for filename in image_paths if
                     filename.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
-captions = [i[7:0] for i in image_paths_list]
-
 curr_preview_index = 0
 curr_algo_index = None
 curr_sorted_list = image_paths_list
@@ -63,7 +61,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         curr_algo_index = evt.index
 
 
-    # functions for Relevance feedback algo
+    # functions for Relevance feedback algo - a2
     def rf_reset():
         global rf_iteration
         rf_iteration = 0
@@ -86,6 +84,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         return checkboxes
 
 
+    # function to show the relevance feedback results
     def show_rf_result_grid(*rf_checkboxes):
         global curr_sorted_list
         rf_images_list_ = []
@@ -97,22 +96,23 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                                                             feature_matrix, 89,
                                                             weights)
 
-            # using argsort to get the indices of sorted array
             sorted_indices = np.argsort(distance_vector)
             curr_sorted_list = [image_paths_list[i] for i in sorted_indices]
+
             for i in curr_sorted_list:
                 rf_images_list_.append(gr.Image(value=i, label=i[7:]))
-            # print(curr_sorted_list)
 
         elif rf_iteration >= 1:
             rf_obj = Algo(2, curr_preview_index)
             feature_matrix = Algo.normalized_icc_feature_matrix(rf_obj, image_folder)
             weights = Algo.get_weights(rf_obj, rf_checkboxes, feature_matrix[rf_obj.preview_image_index],
                                        curr_sorted_list, image_folder)
+
             distance_vector = Algo.get_norm_distance_vector(rf_obj, feature_matrix[rf_obj.preview_image_index],
                                                             feature_matrix, 89, weights)
             sorted_indices = np.argsort(distance_vector)
             curr_sorted_list = [image_paths_list[i] for i in sorted_indices]
+
             for i in curr_sorted_list:
                 rf_images_list_.append(gr.Image(value=i, label=i[7:]))
 
@@ -125,7 +125,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         return {rf_result: gr.Column(visible=True)}
 
 
-    # GUI
+    # GUI - Preview Gallery & Buttons
     with gr.Row():
         with gr.Column(scale=2):
             gallery = gr.Gallery(
@@ -146,7 +146,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             button = gr.Button("Run")
             rf_button = gr.Button("Run RF")
 
-    # GUI - Result view
+    # GUI - Result Gallery (without RF)
     gr.HTML("<hr>")
     with gr.Row():
         with gr.Column(variant='panel'):
@@ -181,7 +181,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                         rf_checkbox.append(gr.Checkbox(label=str(count), info="Relevant"))
                         count += 1
 
-    # Event listeners for preview_gallery, run button & dropdown menu
+    # Event listeners for preview_gallery, run buttons & dropdown menu
     gallery.select(fn=update_preview_image, inputs=None, outputs=preview_image)
     dropdown.select(dropdown_algo_setter)
     button.click(fn=show_result_gallery, inputs=None, outputs=result_gallery)

@@ -9,7 +9,7 @@ if __name__ == "__main__":
     image_paths = os.listdir(img_folder_)
     image_paths_list = [os.path.join(img_folder_, filename) for filename in image_paths if
                         filename.lower().endswith(('.jpg', '.jpeg', '.png'))]
-    obj = Algo(2, 1)
+    obj = Algo(2, 0)
     norm_f_mat = Algo.normalized_icc_feature_matrix(obj, img_folder_)
     rf_inputs = [False] * 100
     true = [0, 1, 2, 3]
@@ -21,11 +21,11 @@ if __name__ == "__main__":
     # print(n_weights)
     norm_f_mat = np.array(norm_f_mat)
     print(f"image-1 path: {image_paths_list[obj.preview_image_index]}")
-    print(f"image-1 features: {norm_f_mat[1]}")
+    print(f"image-1 features: {norm_f_mat[0]}")
 
     print(norm_f_mat.shape)
     # print(icc_f_mat)
     dv = Algo.get_norm_distance_vector(obj, norm_f_mat[obj.preview_image_index], norm_f_mat, 89, n_weights)
     # np.set_printoptions(suppress=False)
     # print(np.array2string(dv, separator=", "))
-    print(dv)
+    # print(dv)

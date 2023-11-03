@@ -21,9 +21,9 @@ class Algo:
         img_paths = os.listdir(img_folder)
         histogram_icc = self.icc_feature_matrix(img_folder)
         feature_mat = []
-
+        histogram_icc = histogram_icc[:, 1:]
         # generating features from histogram
-        print(f"histogram shape: {histogram_icc.shape}")
+        # print(f"histogram shape: {histogram_icc.shape}")
         for i in range(0, histogram_icc.shape[0]):
             feature_row = []
             for j in range(0, histogram_icc.shape[1]):
@@ -41,12 +41,12 @@ class Algo:
             avg_arr.append(avg)
         std_arr = np.array(std_arr)
         avg_arr = np.array(avg_arr)
-        print(f"feature_matrix shape = {feature_mat.shape}")
+        # print(f"feature_matrix shape = {feature_mat.shape}")
         # generating norm_feature matrix from features
         normalized_feature_mat = []
-        print(f"shapes: mean_arr: {avg_arr.shape}, std_arr:{std_arr.shape}")
-        print(f"mean_arr[1]: {avg_arr}")
-        print(f"std_arr[1]: {std_arr}")
+        # print(f"shapes: mean_arr: {avg_arr.shape}, std_arr:{std_arr.shape}")
+        # print(f"mean_arr[1]: {avg_arr}")
+        # print(f"std_arr[1]: {std_arr}")
 
         for i in range(0, feature_mat.shape[0]):
             norm_row = []
@@ -64,7 +64,7 @@ class Algo:
         img_paths = os.listdir(img_folder)
         ic_mat = self.intensity_code_feature_matrix(img_folder)
         cc_mat = self.color_code_feature_matrix(img_folder)
-        feature_mat = np.concatenate((ic_mat[:, 1:], (cc_mat[:, 1:])), axis=1)
+        feature_mat = np.concatenate((ic_mat[:, :], (cc_mat[:, 1:])), axis=1)
         feature_mat = np.array(feature_mat)
         # print(normalized_feature_mat.shape)
 
@@ -124,13 +124,14 @@ class Algo:
 
         return feature_mat
 
-    # calculates manhattan dist between 2 images
+    # calculates manhattan dist between 2 image histograms
     def manhattan_dist(self, selected_img, other_img, bin_size):
         d = 0
         for i in range(1, bin_size):
             d += abs((selected_img[i] / selected_img[0]) - (other_img[i] / other_img[0]))
         return d
 
+    # calculates weighted manhattan distance between 2 normalized image features
     def manhattan_dist_norm(self, selected_img, other_img, bin_size, weights):
         d = 0
         for i in range(0, bin_size):
@@ -150,37 +151,7 @@ class Algo:
             dist_vector[i] = (self.manhattan_dist(selected_img, f_mat[i], bin_size))
         return dist_vector
 
-    # parallellized functions
-    # def process_image_ic(self, image_path):
-    #     image = cv2.imread(image_path)
-    #     histogram = np.zeros(26, dtype=np.int32)
-    #     histogram[0] = image.size
-    #     for row in image:
-    #         for pixel in row:
-    #             intensity = 0.299 * pixel[2] + 0.587 * pixel[1] + 0.114 * pixel[0]
-    #             bin_index = int(intensity / 10)
-    #             if (bin_index == 25):
-    #                 histogram[bin_index] += 1
-    #             else:
-    #                 histogram[bin_index + 1] += 1
-    #     return histogram
-    #
-    # def pmap(self, func, iterable, num_processes=None):
-    #     if num_processes is None:
-    #         num_processes = os.cpu_count()  # Use all available CPU cores by default
-    #
-    #     with Pool(num_processes) as pool:
-    #         return pool.map(func, iterable)
-    #
-    # def intensity_code_feature_map(self, img_folder_):
-    #     image_paths = [os.path.join(img_folder_, cur_img) for cur_img in os.listdir(img_folder_)]
-    #     histograms = self.pmap(self.process_image_ic, image_paths)  # Process images in parallel
-    #
-    #     num_imgs = len(image_paths)
-    #     feature_mat = np.zeros(num_imgs * 26).reshape(num_imgs, 26)
-    #     for count, histogram in enumerate(histograms):
-    #         feature_mat[count] = histogram
-    #     return feature_mat
+    # function to provide indices of RF selected images as per the local image folder
     def fetch_indices(self, selected_img, img_folder, selected_img_paths):
 
         img_paths = os.listdir(img_folder)
@@ -196,6 +167,7 @@ class Algo:
         ret = np.unique(org_indices)
         return ret
 
+    # provides the updated weights for RF input images
     def get_weights(self, rf_inputs, selected_img, curr_img_list, img_folder):
         selected_img_paths = []
         for i in range(0, 100):
